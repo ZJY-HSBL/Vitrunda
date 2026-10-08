@@ -57,6 +57,8 @@ struct Runtime {
     animating: bool,
     direction: Direction,
     started: Instant,
+    from_progress: f32,
+    progress: f32,
 }
 
 unsafe impl Send for Runtime {}
@@ -120,6 +122,8 @@ pub fn run() -> Result<()> {
             animating: false,
             direction: Direction::Opening,
             started: Instant::now(),
+            from_progress: 0.0,
+            progress: 0.0,
         }));
 
         let mut message = MSG::default();
@@ -166,7 +170,7 @@ unsafe extern "system" fn window_proc(
             if wparam.0 as u32 == 0x1B {
                 if let Some(lock) = RUNTIME.get() {
                     if let Ok(runtime) = lock.lock() {
-                        if runtime.config.close_on_escape && runtime.open {
+                        if runtime.config.close_on_escape && (runtime.open || runtime.animating) {
                             drop(runtime);
                             begin_animation(Direction::Closing);
                         }
@@ -219,6 +223,7 @@ unsafe fn begin_animation(direction: Direction) {
     runtime.direction = direction;
     runtime.animating = true;
     runtime.started = Instant::now();
+    runtime.from_progress = runtime.progress;
 
     if direction == Direction::Opening {
         ShowWindow(runtime.overlay, SW_SHOW);
@@ -241,10 +246,10 @@ unsafe fn tick_animation() {
     let duration = runtime.config.animation_ms.max(1) as f32;
     let raw = (runtime.started.elapsed().as_millis() as f32 / duration).clamp(0.0, 1.0);
 
-    let progress = match runtime.direction {
-        Direction::Opening => liquid_ease(raw),
-        Direction::Closing => 1.0 - liquid_ease(raw),
-    };
+    let target = if runtime.direction == Direction::Opening { 1.0 } else { 0.0 };
+    let progress = runtime.from_progress
+        + (target - runtime.from_progress) * liquid_ease(raw);
+    runtime.progress = progress;
 
     let width_p = springish(progress);
     let height_p = springish(((progress - 0.035) / 0.965).clamp(0.0, 1.0));
@@ -288,6 +293,7 @@ unsafe fn tick_animation() {
         KillTimer(runtime.overlay, TIMER_ID);
         runtime.animating = false;
         runtime.open = runtime.direction == Direction::Opening;
+        runtime.progress = if runtime.open { 1.0 } else { 0.0 };
 
         if runtime.direction == Direction::Closing {
             ShowWindow(runtime.overlay, SW_HIDE);
