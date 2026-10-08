@@ -69,6 +69,7 @@ static RUNTIME: OnceLock<Mutex<Runtime>> = OnceLock::new();
 pub fn run() -> Result<()> {
     unsafe {
         let config = Config::load();
+        let _gpu_context = super::gpu::GpuContext::try_create();
         let _ = config.save();
         set_autostart(config.autostart);
 

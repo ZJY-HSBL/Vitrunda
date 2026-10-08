@@ -15,6 +15,8 @@ windows = { version = "0.58", features = [
     "Win32_Foundation",
     "Win32_Graphics_Dwm",
     "Win32_Graphics_Gdi",
+    "Win32_Graphics_Direct3D",
+    "Win32_Graphics_Direct3D11",
     "Win32_System_LibraryLoader",
     "Win32_System_Registry",
     "Win32_UI_WindowsAndMessaging"
