@@ -115,6 +115,7 @@ pub fn run() -> Result<()> {
         SetLayeredWindowAttributes(hot, COLORREF(0), 1, LWA_ALPHA)?;
         ShowWindow(hot, SW_SHOW);
 
+        let initial_transition_ms = config.animation_ms.max(1) as f32;
         let _ = RUNTIME.set(Mutex::new(Runtime {
             config,
             overlay,
@@ -125,7 +126,7 @@ pub fn run() -> Result<()> {
             started: Instant::now(),
             from_progress: 0.0,
             progress: 0.0,
-            transition_ms: config.animation_ms.max(1) as f32,
+            transition_ms: initial_transition_ms,
         }));
 
         let mut message = MSG::default();
