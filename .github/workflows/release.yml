@@ -1,0 +1,28 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build
+        run: cargo build --release
+      - name: Package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist | Out-Null
+          Copy-Item target/release/vitrunda.exe dist/Vitrunda.exe
+          Compress-Archive -Path dist/Vitrunda.exe -DestinationPath dist/Vitrunda-windows-x64.zip
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/Vitrunda-windows-x64.zip
+          generate_release_notes: true
