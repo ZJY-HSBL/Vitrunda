@@ -388,3 +388,26 @@ unsafe fn set_autostart(enabled: bool) {
 fn wide(value: &str) -> Vec<u16> {
     OsStr::new(value).encode_wide().chain(Some(0)).collect()
 }
+
+#[cfg(test)]
+mod animation_tests {
+    use super::{liquid_ease, springish, lerp_i32};
+
+    #[test]
+    fn animation_endpoints_are_exact() {
+        assert_eq!(liquid_ease(0.0), 0.0);
+        assert_eq!(liquid_ease(1.0), 1.0);
+        assert_eq!(springish(0.0), 0.0);
+        assert_eq!(springish(1.0), 1.0);
+    }
+
+    #[test]
+    fn animation_never_escapes_bounds() {
+        for step in 0..=1000 {
+            let t = step as f32 / 1000.0;
+            assert!((0.0..=1.0).contains(&liquid_ease(t)));
+            assert!((0.0..=1.0).contains(&springish(t)));
+            assert!((14..=1920).contains(&lerp_i32(14, 1920, springish(t))));
+        }
+    }
+}
