@@ -275,7 +275,7 @@ unsafe fn tick_animation() {
         SWP_SHOWWINDOW,
     );
 
-    let radius = lerp_i32(28, 0, progress).max(0);
+    let radius = liquid_corner_radius(width, height, progress);
     if radius > 0 {
         let region: HRGN = CreateRoundRectRgn(0, 0, width + 1, height + 1, radius, radius);
         if !region.is_invalid() {
@@ -421,5 +421,36 @@ mod animation_tests {
             assert!((0.0..=1.0).contains(&springish(t)));
             assert!((14..=1920).contains(&lerp_i32(14, 1920, springish(t))));
         }
+    }
+}
+
+fn liquid_corner_radius(width: i32, height: i32, progress: f32) -> i32 {
+    let short_edge = width.min(height).max(0);
+    let cap = (short_edge / 2).max(0);
+    let wave = (progress * std::f32::consts::PI).sin().abs();
+    let desired = (short_edge as f32 * (0.18 + 0.14 * wave)).round() as i32;
+    if progress >= 1.0 { 0 } else { desired.clamp(0, cap) }
+}
+
+#[cfg(test)]
+mod liquid_shape_tests {
+    use super::liquid_corner_radius;
+
+    #[test]
+    fn radius_is_bounded_by_window_size() {
+        for width in [8, 14, 80, 320, 1920] {
+            for height in [8, 14, 90, 480, 1080] {
+                for i in 0..=100 {
+                    let radius = liquid_corner_radius(width, height, i as f32 / 100.0);
+                    assert!(radius >= 0);
+                    assert!(radius <= width.min(height) / 2);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn fully_open_overlay_has_no_rounded_clip() {
+        assert_eq!(liquid_corner_radius(1920, 1080, 1.0), 0);
     }
 }
