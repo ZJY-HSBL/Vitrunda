@@ -280,7 +280,7 @@ unsafe fn tick_animation() {
         let region: HRGN = CreateRoundRectRgn(0, 0, width + 1, height + 1, radius, radius);
         if !region.is_invalid() {
             if SetWindowRgn(runtime.overlay, region, true) == 0 {
-                let _ = DeleteObject(region.into());
+                let _ = DeleteObject(region);
             }
         }
     } else {
