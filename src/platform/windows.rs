@@ -13,7 +13,7 @@ use windows::{
             Dwm::{DwmEnableBlurBehindWindow, DWM_BB_ENABLE, DWM_BLURBEHIND},
             Gdi::{
                 BeginPaint, CreateRoundRectRgn, CreateSolidBrush, DeleteObject, EndPaint,
-                FillRect, GetClientRect, HBRUSH, HRGN, PAINTSTRUCT,
+                FillRect, HBRUSH, HRGN, PAINTSTRUCT, SetWindowRgn,
             },
         },
         System::{
@@ -24,15 +24,15 @@ use windows::{
             },
         },
         UI::WindowsAndMessaging::{
-            CreateWindowExW, DefWindowProcW, DispatchMessageW, GetMessageW,
+            CreateWindowExW, DefWindowProcW, DispatchMessageW, GetClientRect, GetMessageW,
             GetSystemMetrics, KillTimer, LoadCursorW, PostQuitMessage, RegisterClassW,
             SetForegroundWindow, SetLayeredWindowAttributes, SetTimer, SetWindowPos,
-            SetWindowRgn, ShowWindow, TranslateMessage, CS_HREDRAW, CS_VREDRAW,
+            ShowWindow, TranslateMessage, CS_HREDRAW, CS_VREDRAW,
             IDC_ARROW, LWA_ALPHA, MSG, SM_CXSCREEN, SM_CYSCREEN,
             SW_HIDE, SW_SHOW, SWP_NOACTIVATE, SWP_SHOWWINDOW,
             WM_DESTROY, WM_KEYDOWN, WM_LBUTTONDOWN, WM_PAINT, WM_TIMER,
             WNDCLASSW, WS_EX_LAYERED, WS_EX_NOACTIVATE, WS_EX_TOOLWINDOW, WS_EX_TOPMOST,
-            WS_POPUP, VK_ESCAPE,
+            WS_POPUP,
         },
     },
 };
@@ -73,7 +73,6 @@ pub fn run() -> Result<()> {
         register_window_class(instance.into())?;
 
         let screen_w = GetSystemMetrics(SM_CXSCREEN);
-        let screen_h = GetSystemMetrics(SM_CYSCREEN);
         let corner = config.hot_corner_size.max(8);
 
         let overlay = CreateWindowExW(
@@ -164,7 +163,7 @@ unsafe extern "system" fn window_proc(
             }
         }
         WM_KEYDOWN => {
-            if wparam.0 as u32 == VK_ESCAPE.0 {
+            if wparam.0 as u32 == 0x1B {
                 if let Some(lock) = RUNTIME.get() {
                     if let Ok(runtime) = lock.lock() {
                         if runtime.config.close_on_escape && runtime.open {
