@@ -59,6 +59,7 @@ struct Runtime {
     started: Instant,
     from_progress: f32,
     progress: f32,
+    transition_ms: f32,
 }
 
 unsafe impl Send for Runtime {}
@@ -124,6 +125,7 @@ pub fn run() -> Result<()> {
             started: Instant::now(),
             from_progress: 0.0,
             progress: 0.0,
+            transition_ms: config.animation_ms.max(1) as f32,
         }));
 
         let mut message = MSG::default();
@@ -224,6 +226,9 @@ unsafe fn begin_animation(direction: Direction) {
     runtime.animating = true;
     runtime.started = Instant::now();
     runtime.from_progress = runtime.progress;
+    let destination: f32 = if direction == Direction::Opening { 1.0 } else { 0.0 };
+    runtime.transition_ms = runtime.config.animation_ms.max(1) as f32
+        * (destination - runtime.progress).abs().max(0.05);
 
     if direction == Direction::Opening {
         ShowWindow(runtime.overlay, SW_SHOW);
@@ -243,7 +248,7 @@ unsafe fn tick_animation() {
     let screen_w = GetSystemMetrics(SM_CXSCREEN).max(1);
     let screen_h = GetSystemMetrics(SM_CYSCREEN).max(1);
     let corner = runtime.config.hot_corner_size.max(8);
-    let duration = runtime.config.animation_ms.max(1) as f32;
+    let duration = runtime.transition_ms;
     let raw = (runtime.started.elapsed().as_millis() as f32 / duration).clamp(0.0, 1.0);
 
     let target = if runtime.direction == Direction::Opening { 1.0 } else { 0.0 };
