@@ -4,6 +4,17 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release tag, for example v0.1.0"
+        required: true
+        type: string
+      prerelease:
+        description: "Publish as a prerelease"
+        required: true
+        default: true
+        type: boolean
 
 permissions:
   contents: write
@@ -11,18 +22,44 @@ permissions:
 jobs:
   release:
     runs-on: windows-latest
+    env:
+      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: dtolnay/rust-toolchain@stable
+
+      - name: Validate release tag
+        shell: pwsh
+        run: |
+          if ($env:RELEASE_TAG -notmatch '^v\d+\.\d+\.\d+([-.][0-9A-Za-z.-]+)?$') {
+            throw "Invalid release tag: $env:RELEASE_TAG"
+          }
+
       - name: Build
         run: cargo build --release
+
       - name: Package
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force dist | Out-Null
           Copy-Item target/release/vitrunda.exe dist/Vitrunda.exe
           Compress-Archive -Path dist/Vitrunda.exe -DestinationPath dist/Vitrunda-windows-x64.zip
-      - uses: softprops/action-gh-release@v2
+          (Get-FileHash dist/Vitrunda.exe -Algorithm SHA256).Hash.ToLower() + "  Vitrunda.exe" |
+            Out-File -Encoding ascii dist/SHA256SUMS.txt
+          (Get-FileHash dist/Vitrunda-windows-x64.zip -Algorithm SHA256).Hash.ToLower() + "  Vitrunda-windows-x64.zip" |
+            Add-Content -Encoding ascii dist/SHA256SUMS.txt
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          files: dist/Vitrunda-windows-x64.zip
+          tag_name: ${{ env.RELEASE_TAG }}
+          target_commitish: ${{ github.sha }}
+          name: Vitrunda ${{ env.RELEASE_TAG }}
           generate_release_notes: true
+          prerelease: ${{ github.event_name == 'workflow_dispatch' && inputs.prerelease || false }}
+          files: |
+            dist/Vitrunda.exe
+            dist/Vitrunda-windows-x64.zip
+            dist/SHA256SUMS.txt
