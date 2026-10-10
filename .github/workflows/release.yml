@@ -4,6 +4,10 @@ on:
   push:
     tags:
       - "v*"
+    branches:
+      - main
+    paths:
+      - "release.json"
   workflow_dispatch:
     inputs:
       version:
@@ -22,20 +26,35 @@ permissions:
 jobs:
   release:
     runs-on: windows-latest
-    env:
-      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
 
     steps:
       - uses: actions/checkout@v4
 
       - uses: dtolnay/rust-toolchain@stable
 
-      - name: Validate release tag
+      - name: Resolve release metadata
         shell: pwsh
         run: |
-          if ($env:RELEASE_TAG -notmatch '^v\d+\.\d+\.\d+([-.][0-9A-Za-z.-]+)?$') {
-            throw "Invalid release tag: $env:RELEASE_TAG"
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+            $tag = "${{ inputs.version }}"
+            $prerelease = "${{ inputs.prerelease }}"
           }
+          elseif ("${{ github.ref_type }}" -eq "tag") {
+            $tag = "${{ github.ref_name }}"
+            $prerelease = "false"
+          }
+          else {
+            $manifest = Get-Content release.json -Raw | ConvertFrom-Json
+            $tag = [string]$manifest.version
+            $prerelease = ([bool]$manifest.prerelease).ToString().ToLower()
+          }
+
+          if ($tag -notmatch '^v\d+\.\d+\.\d+([-.][0-9A-Za-z.-]+)?$') {
+            throw "Invalid release tag: $tag"
+          }
+
+          "RELEASE_TAG=$tag" >> $env:GITHUB_ENV
+          "PRERELEASE=$prerelease" >> $env:GITHUB_ENV
 
       - name: Build
         run: cargo build --release
@@ -58,7 +77,7 @@ jobs:
           target_commitish: ${{ github.sha }}
           name: Vitrunda ${{ env.RELEASE_TAG }}
           generate_release_notes: true
-          prerelease: ${{ github.event_name == 'workflow_dispatch' && inputs.prerelease || false }}
+          prerelease: ${{ env.PRERELEASE }}
           files: |
             dist/Vitrunda.exe
             dist/Vitrunda-windows-x64.zip
