@@ -6,6 +6,21 @@ Vitrunda is an experimental Windows desktop layer built around one idea: **the w
 
 Vitrunda 是一个面向 Windows 的轻量级隐藏桌面工具。它的核心目标很简单：**平时让桌面只展示壁纸，需要时再从屏幕角落召唤出完整工作空间。**
 
+## Download · 下载
+
+The current public build is **v0.1.0-preview.1** and is published as a GitHub Pre-release.
+
+当前公开构建版本为 **v0.1.0-preview.1**，以 GitHub Pre-release 形式发布。
+
+- [Vitrunda.exe](https://github.com/ZJY-HSBL/Vitrunda/releases/download/v0.1.0-preview.1/Vitrunda.exe)
+- [Vitrunda-windows-x64.zip](https://github.com/ZJY-HSBL/Vitrunda/releases/download/v0.1.0-preview.1/Vitrunda-windows-x64.zip)
+- [SHA256SUMS.txt](https://github.com/ZJY-HSBL/Vitrunda/releases/download/v0.1.0-preview.1/SHA256SUMS.txt)
+- [All Releases](https://github.com/ZJY-HSBL/Vitrunda/releases)
+
+> Preview builds are intended for interaction and rendering validation. The Direct3D 11 backend is now initialized in the codebase, but the DirectComposition/HLSL liquid renderer is still under development.
+>
+> 预览版本主要用于交互与渲染链路验证。目前代码中已经接入 Direct3D 11 初始化，但 DirectComposition/HLSL 液态玻璃渲染器仍在开发中。
+
 ## Concept · 核心交互
 
 1. The normal desktop remains clean and unobstructed. / 默认桌面保持纯净，不常驻任何面板。
